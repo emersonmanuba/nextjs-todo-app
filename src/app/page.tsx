@@ -1,16 +1,23 @@
 "use client";
 
 interface Task {
-  id: string;
+  id: string; // Unique identifier for the task
   title: string;
   status: "pending" | "in-progress" | "completed";
-  dateCreated: string;
-  dateStarted: string | null;
-  dateCompleted: string | null;
+  date_created: string; // Changed to snake_case dateCreated
+  date_started: string | null; // Changed to snake_case dateStarted
+  date_completed: string | null; // Changed to snake_case dateCompleted
+  order: number; // New field for task order
 }
 
 import { motion, Reorder } from "framer-motion";
 import { useState, useEffect } from "react";
+import { PlusSquare, Trash, Check, Edit, X, Play } from "react-feather";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Home() {
   const [task, setTask] = useState("");
@@ -18,57 +25,95 @@ export default function Home() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [filter, setFilter] = useState<"All Tasks" | "Pending" | "Active" | "Completed">("All Tasks");
+  const [loading, setLoading] = useState(true);
 
 
-  // Load tasks from localStorage on component mount
+  // Load tasks from Supabase on component mount
   useEffect(() => {
-    const storedTasks = localStorage.getItem("tasks");
-    if (storedTasks) {
-      setTasks(JSON.parse(storedTasks));
-    }
+    fetchTasks();
   }, []);
 
-  // Save tasks to localStorage whenever tasks change
-  useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
+  // Function to fetch all tasks from Supabase
+  const fetchTasks = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .order('order', { ascending: true });
+
+    if (error) {
+      console.error("Error fetching tasks:", error);
+    } else {
+      setTasks(data || []);
+    }
+    setLoading(false);
+  };
 
   // Function to handle adding a new task
-  const addTask = () => {
+  const addTask = async () => {
     if (task.trim()) {
-      const newTask: Task = {
-        id: Date.now().toString(),
+      const newTask = {
         title: task,
-        status: "pending",
-        dateCreated: new Date().toISOString(),
-        dateStarted: null,
-        dateCompleted: null,
+        status: "pending" as const,
+        date_created: new Date().toISOString(),
+        date_started: null,
+        date_completed: null,
+        order: tasks.length, // Set order based on current length
       };
-      setTasks([...tasks, newTask]);
-      setTask("");
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([newTask])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error fetching tasks:", error);
+      } else {
+        setTasks([...tasks, data]);
+        setTask("");
+      }
     }
   };
 
   // Function to marked the task as started
-  const markedStarted = (id: string) => {
-    const updatedTasks = tasks.map(task_start =>
-      task_start.id === id ? {
-        ...task_start, status: "in-progress" as const,
-        dateStarted: new Date().toISOString()
-      } : task_start); // Create a shallow copy
-    setTasks(updatedTasks);
-  }
+  const markedStarted = async (id: string) => {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({
+        status: "in-progress" as const,
+        date_started: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating task:", error);
+    } else {
+      setTasks(tasks.map(task => task.id === id ? data : task));
+    }
+  };
+
 
   // Function to mark the task as completed
-  const markedCompleted = (id: string) => {
-    const updatedTasks = tasks.map(task_complete =>
-      task_complete.id === id ? {
-        ...task_complete, completed: true,
-        status: "completed" as const,
-        dateCompleted: new Date().toISOString()
-      } : task_complete);
-    setTasks(updatedTasks);
-  }
+  const markedCompleted = async (id: string) => {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({
+        status: "completed",
+        date_completed: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating task:", error);
+    } else {
+      setTasks(tasks.map(task => task.id === id ? data : task));
+    }
+  };
 
   // Function to toggle task completion
   const toggleTaskCompletion = (id: string) => {
@@ -94,9 +139,21 @@ export default function Home() {
 
 
   // Function to remove a task
-  const removeTask = (id: string) => {
-    const updatedTasks = tasks.filter(remove => remove.id !== id);
-    setTasks(updatedTasks);
+  const removeTask = async (id: string) => {
+    //Show confirmation dialog
+    const confirmDelete = confirm("Are you sure you want to delete this task?");
+      if (!confirmDelete) return;
+      
+    const { data, error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Error removing task:", error);
+    } else {
+      setTasks(tasks.filter(remove => remove.id !== id));
+    }
   }
 
   // Function to start editing a task
@@ -106,13 +163,19 @@ export default function Home() {
   };
 
   // Function to save edited task
-  const saveEditedTask = (id: string) => {
+  const saveEditedTask = async (id: string) => {
     if (editText.trim()) {
-      const updatedTasks = [...tasks];
-      const taskIndex = updatedTasks.findIndex(task => task.id === id);
-      if (taskIndex !== -1) {
-        updatedTasks[taskIndex].title = editText;
-        setTasks(updatedTasks);
+      const { data, error } = await supabase
+        .from('tasks')
+        .update({ title: editText })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error saving edited task:", error);
+      } else {
+        setTasks(tasks.map(task => task.id === id ? data : task));
       }
     }
     setEditText("");
@@ -125,6 +188,24 @@ export default function Home() {
     setEditingId(null);
   }
 
+  const handleReorder = async (newOrder: Task[]) => {
+    setTasks(newOrder);
+
+    // Update order in Supabase
+    const updates = newOrder.map((task, index) => ({
+      id: task.id,
+      order: index,
+    }));
+
+    for (const update of updates) {
+      await supabase
+        .from('tasks')
+        .update({ order: update.order })
+        .eq('id', update.id);
+    }
+  };
+
+  // Function to format date strings
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Not Set";
     const date = new Date(dateString);
@@ -142,7 +223,7 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <h1 className="text-4xl font-bold mb-4">My To-do App</h1>
+      <h1 className="text-4xl font-bold mb-4">📝 My Todo App</h1>
       <div className="flex items-center justify-between w-2xl max-w-5xl mb-12 mt-12">
         {/* This is a simple to-do app built with React and Tailwind CSS. */}
         <input
@@ -155,17 +236,18 @@ export default function Home() {
             }
           }}
           placeholder="Enter a new task"
-          className="border p-2 mb-4 w-1/2"
+          className="border p-2 mb-4 w-1/2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
         />
-        <button
+        <motion.button
           onClick={() => {
             addTask();
             setTask("");
           }}
-          className="bg-blue-500 text-white p-2 rounded mb-4"
+          whileHover={{ scale: 1.05 }}
+          className="bg-blue-500 hover:bg-blue-700 text-white p-2 rounded mb-4 gap-2 flex items-center"
         >
-          Add Task
-        </button>
+          <PlusSquare size={25} />Add
+        </motion.button>
       </div>
       {/* Filter Buttons */}
       <div className="flex gap-2 mb-6">
@@ -181,8 +263,8 @@ export default function Home() {
         <button
           onClick={() => setFilter("Pending")}
           className={`px-4 py-2 rounded transition-colors ${filter === "Pending"
-              ? "bg-gray-500 text-white"
-              : "bg-white text-gray-700 hover:bg-gray-300"
+            ? "bg-gray-500 text-white"
+            : "bg-white text-gray-700 hover:bg-gray-300"
             }`}
         >
           Pending ({tasks.filter((pending) => pending.status === "pending").length})
@@ -208,7 +290,11 @@ export default function Home() {
       </div>
       {/* Task List with Drag-and-Drop Reordering */}
       <div className="space-y-4 p-2 w-full max-w-2xl">
-        {filteredTasks.length === 0 ? (
+        {loading ? (
+          <div className="p-6 bg-gray-50 border rounded-lg text-gray-700">
+            Loading tasks...
+          </div>
+        ) : filteredTasks.length === 0 ? (
           <div className="p-6 bg-gray-50 border rounded-lg text-gray-700">
             {filter === "All Tasks" ? "No tasks available. Please add a task." : `No ${filter.toLowerCase()} tasks available. Please add a task.`}
           </div>
@@ -216,7 +302,7 @@ export default function Home() {
           <Reorder.Group
             axis="y"
             values={filteredTasks}
-            onReorder={setTasks}
+            onReorder={handleReorder}
             className="space-y-2"
           >
             {filteredTasks.map((item) => (
@@ -228,9 +314,13 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="p-3 bg-blue-700 border rounded-lg flex justify-between items-center"
+                className="p-3 bg-blue-700 border rounded-lg flex justify-between items-center cursor-grab active:cursor-grabbing"
+                style={{ touchAction: "none" }}
               >
+
+                {/* Drag handle indicator */}
                 <div className="mr-3 text-white text-xl select-none">⋮⋮</div>
+
                 {/* Conditional rendering: edit mode and view mode */}
                 {editingId === item.id ? (
                   // Edit Mode
@@ -270,13 +360,14 @@ export default function Home() {
                       </div>
                     </motion.div>
                     <div className="text-sm text-gray-300 mt-1 space-y-0.5">
-                      📅 Created: {formatDate(item.dateCreated)}
-                      {item.dateStarted && <div>🚀 Started: {formatDate(item.dateStarted)}</div>}
-                      {item.dateCompleted && <div>✅ Finished: {formatDate(item.dateCompleted)}</div>}
+                      📅 Created: {formatDate(item.date_created)}
+                      {item.date_started && <div>🚀 Started: {formatDate(item.date_started)}</div>}
+                      {item.date_completed && <div>✅ Finished: {formatDate(item.date_completed)}</div>}
                     </div>
                   </div>
                 )}
 
+                {/* Action Buttons */}
                 <div className="space-x-4">
                   {editingId === item.id ? (
                     // Save and Cancel buttons in edit mode
@@ -287,27 +378,31 @@ export default function Home() {
                         whileTap={{ scale: 0.95 }}
                         className="bg-green-500 text-white p-1.5 rounded"
                       >
-                        Save
+                        {/* Save Button */}
+                        <Check size={20} />
                       </motion.button>
                       <motion.button
                         onClick={cancelEditing}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className="bg-gray-500 text-white p-1.5 rounded"
+                        className="bg-red-500 text-white p-1.5 rounded"
                       >
-                        Cancel
+                        {/* Cancel Button */}
+                        <X size={20} />
                       </motion.button>
                     </>
                   ) : (
+                    // Status and action buttons in view mode
                     <>
                       {item.status === "pending" && (
                         <motion.button
                           onClick={() => markedStarted(item.id)}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="bg-blue-500 text-white px-2 py-1.5 rounded text-sm"
+                          className="bg-blue-500 text-white px-2 py-1.5 rounded"
                         >
-                          Start
+                          {/* Start Button */}
+                          <Play size={20} />
                         </motion.button>
                       )}
                       {item.status === "in-progress" && (
@@ -315,9 +410,9 @@ export default function Home() {
                           onClick={() => markedCompleted(item.id)}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="bg-green-500 text-white px-2 py-1.5 rounded text-sm"
+                          className="bg-green-500 text-white px-2 py-1.5 rounded"
                         >
-                          Complete
+                          <Check size={20} />
                         </motion.button>
                       )}
                       <motion.button
@@ -326,7 +421,7 @@ export default function Home() {
                         whileTap={{ scale: 0.95 }}
                         className="bg-yellow-500 text-white p-1.5 rounded"
                       >
-                        Edit Task
+                        <Edit size={20} />
                       </motion.button>
                       {/* Action Buttons - Delete button functional */}
                       <motion.button
@@ -335,7 +430,7 @@ export default function Home() {
                         whileTap={{ scale: 0.95 }}
                         className="bg-red-500 text-white p-1.5 rounded"
                       >
-                        Delete Task
+                        <Trash size={20} />
                       </motion.button>
                     </>
                   )}
