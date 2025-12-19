@@ -8,18 +8,23 @@ interface Task {
   date_started: string | null; // Changed to snake_case dateStarted
   date_completed: string | null; // Changed to snake_case dateCompleted
   order: number; // New field for task order
+  user_id: string; // ID of the user who owns the task
 }
 
 import { motion, Reorder } from "framer-motion";
 import { useState, useEffect } from "react";
 import { PlusSquare, Trash, Check, Edit, X, Play } from "react-feather";
 import { createClient } from "@supabase/supabase-js";
+import { useAuth } from "./context/AuthContext";
+import { useRouter } from "next/navigation";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Home() {
+  const { user, loading: authLoading, signOut } = useAuth();
+  const router = useRouter();
   const [task, setTask] = useState("");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -30,11 +35,22 @@ export default function Home() {
 
   // Load tasks from Supabase on component mount
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    if (!user && !authLoading) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user) {
+      fetchTasks();
+    }
+  }, [user]);
+
 
   // Function to fetch all tasks from Supabase
   const fetchTasks = async () => {
+    if (!user) return;
+
     setLoading(true);
     const { data, error } = await supabase
       .from('tasks')
@@ -51,7 +67,7 @@ export default function Home() {
 
   // Function to handle adding a new task
   const addTask = async () => {
-    if (task.trim()) {
+    if (task.trim() && user) {
       const newTask = {
         title: task,
         status: "pending" as const,
@@ -59,6 +75,7 @@ export default function Home() {
         date_started: null,
         date_completed: null,
         order: tasks.length, // Set order based on current length
+        user_id: user.id
       };
 
       const { data, error } = await supabase
@@ -142,8 +159,8 @@ export default function Home() {
   const removeTask = async (id: string) => {
     //Show confirmation dialog
     const confirmDelete = confirm("Are you sure you want to delete this task?");
-      if (!confirmDelete) return;
-      
+    if (!confirmDelete) return;
+
     const { data, error } = await supabase
       .from('tasks')
       .delete()
@@ -221,9 +238,29 @@ export default function Home() {
     return true;
   });
 
+  if (authLoading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <h1 className="text-4xl font-bold mb-4">📝 My Todo App</h1>
+      {/* Header with User Info and Log Out */}
+      <div className="flex w-full max-w-5xl items-center justify-between mb-12">
+        <h1 className="text-4xl font-bold mb-4">📝 My Todo App</h1>
+        <div className="flex items-center gap-4">
+          <span className="text-white">Welcome, {user.email}</span>
+          <button
+            onClick={signOut}
+            className="bg-red-500 hover:bg-red-700 text-white p-2 rounded"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
       <div className="flex items-center justify-between w-2xl max-w-5xl mb-12 mt-12">
         {/* This is a simple to-do app built with React and Tailwind CSS. */}
         <input
