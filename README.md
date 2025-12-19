@@ -6,7 +6,7 @@ A modern, feature-rich todo application built with Next.js, TypeScript, Framer M
 
 ### Core Functionality
 - ✅ **Create Tasks** - Add new tasks with automatic date tracking
-- ✏️ **Edit Tasks** - Double-click or use the Edit icon to modify tasks
+- ✏️ **Edit Tasks** - Use the Edit icon to modify tasks
 - 🗑️ **Delete Tasks** - Remove tasks with confirmation dialog
 - 🔄 **Drag & Drop Reordering** - Reorder tasks with smooth animations
 
