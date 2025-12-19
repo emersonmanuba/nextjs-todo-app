@@ -181,7 +181,7 @@ This is a personal learning project, but suggestions and feedback are welcome! F
 
 ## 👤 Author
 
-**Your Name**
+**Emerson Manuba**
 - GitHub: [@emersonmanuba](https://github.com/emersonmanuba)
 
 ## 🙏 Acknowledgments
