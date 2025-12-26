@@ -17,9 +17,13 @@ export default function ThemeToggle() {
         >
             {/* Toggle Circle */}
             <motion.div
-                className="w-6 h-6 bg-white dark:bg-gray-900 rounded-full shadow-md flex items-center justify-center"
+                className={`w-6 h-6 ${theme === 'dark'
+                    ? 'bg-white'
+                    : 'bg-gray-800'
+                    }
+                rounded-full shadow-md flex items-center justify-center`}
                 animate={{
-                    x: theme === 'dark' ? 32 : 0,
+                    x: theme === 'dark' ? 30 : 0,
                 }}
                 transition={{
                     type: "spring",

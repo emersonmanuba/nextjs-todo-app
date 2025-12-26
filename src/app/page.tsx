@@ -13,7 +13,7 @@ interface Task {
 
 import { motion, Reorder } from "framer-motion";
 import { useState, useEffect } from "react";
-import { PlusSquare, Trash, Check, Edit, X, Play, Sun, Moon } from "react-feather";
+import { PlusSquare, Trash, Check, Edit, X, Play} from "react-feather";
 import { createClient } from "@supabase/supabase-js";
 import { useAuth } from "./context/AuthContext";
 import { useTheme } from "./context/ThemeContext";

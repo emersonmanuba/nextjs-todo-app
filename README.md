@@ -1,6 +1,6 @@
 # Next.js Todo Application
 
-A modern, feature-rich todo application built with Next.js, TypeScript, Framer Motion, and Supabase. This project demonstrates full-stack development with real-time database integration and smooth user interactions.
+A modern, feature-rich, multi-user todo application built with Next.js, TypeScript, Framer Motion, and Supabase. This project demonstrates full-stack development with user authentication, real-time database integration, and smooth user interactions.
 
 ## 🚀 Features
 
@@ -22,40 +22,48 @@ A modern, feature-rich todo application built with Next.js, TypeScript, Framer M
   - Date Started - Recorded when task is marked as "In Progress"
   - Date Finished - Recorded when task is marked as "Completed"
 - 💾 **Database Persistence** - All data stored in Supabase PostgreSQL database
+- 🔐 **User Authentication** - Secure signup/login with email and password
+- 👤 **Multi-User Support** - Each user has their own private task list
+- 🔒 **Row Level Security** - Database-enforced user isolation
 - 🎨 **Smooth Animations** - Powered by Framer Motion
 - 🎯 **Icon-Based UI** - Clean interface using React Feather icons
 - ⚠️ **Delete Confirmation** - Prevents accidental task deletion
+- 🌓 **Dark/Light Mode** - Animated theme toggle with persistent preference
 
 ## 🛠️ Technologies Used
 
 - **Framework**: [Next.js 14+](https://nextjs.org/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Database**: [Supabase](https://supabase.com/) (PostgreSQL)
+- **Authentication**: Supabase Auth
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Animations**: [Framer Motion](https://www.framer.com/motion/)
 - **Icons**: [React Feather](https://github.com/feathericons/react-feather)
 
 ## 📦 Installation
 
-1. Clone the repository:
+### Prerequisites
+- Node.js 18+ installed
+- A Supabase account
+
+### Setup Steps
+
+1. **Clone the repository:**
 ```bash
 git clone https://github.com/emersonmanuba/nextjs-todo-app.git
 cd nextjs-todo-app
 ```
 
-2. Install dependencies:
+2. **Install dependencies:**
 ```bash
 npm install
-# or
-yarn install
-# or
-pnpm install
 ```
 
-3. Set up Supabase:
-   - Create a [Supabase account](https://supabase.com)
-   - Create a new project
-   - Create a `tasks` table with the following schema:
+3. **Set up Supabase:**
+
+   a. Create a [Supabase account](https://supabase.com) and new project
+   
+   b. Create a `tasks` table with the following schema:
 
 ```sql
 create table tasks (
@@ -66,36 +74,75 @@ create table tasks (
   date_created timestamp with time zone default timezone('utc'::text, now()),
   date_started timestamp with time zone,
   date_finished timestamp with time zone,
-  "order" bigint default 0
+  "order" bigint default 0,
+  user_id uuid references auth.users(id) on delete cascade not null
 );
+
+-- Create index for faster queries
+create index idx_tasks_user_id on tasks(user_id);
 ```
 
-4. Create a `.env.local` file in the root directory:
+   c. Enable Row Level Security and create policies:
+
+```sql
+-- Enable RLS
+alter table tasks enable row level security;
+
+-- Create policies
+create policy "Users can view their own tasks"
+on tasks for select
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "Users can insert their own tasks"
+on tasks for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+create policy "Users can update their own tasks"
+on tasks for update
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "Users can delete their own tasks"
+on tasks for delete
+to authenticated
+using (auth.uid() = user_id);
+```
+
+4. **Configure environment variables:**
+
+Create a `.env.local` file in the root directory:
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
-5. Run the development server:
+Get these values from: Supabase Dashboard → Project Settings → API
+
+5. **Run the development server:**
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
 
-6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+6. Open (http://localhost:3000) in your browser.
 
 ## 🎯 How to Use
 
+### Getting Started
+1. **Sign Up**: Create a new account at `/signup`
+2. **Log In**: Access your account at `/login`
+
+### Managing Tasks
 1. **Add a Task**: Type in the input field and click the add icon or press Enter
 2. **Start a Task**: Click the play icon on a pending task to mark it as in-progress
 3. **Complete a Task**: Click the check icon on an in-progress task to mark it as done
-4. **Edit a Task**: Double-click the task text or click the edit icon
+4. **Edit a Task**: Click the edit icon
 5. **Delete a Task**: Click the delete icon and confirm the action
 6. **Reorder Tasks**: Click and drag the handle (⋮⋮) to reorder your list
 7. **Filter Tasks**: Use the filter buttons to view specific task categories
+8. **Toggle Theme**: Click the sun/moon toggle to switch between light and dark mode
 
 ## 📊 Project Structure
 
@@ -103,13 +150,23 @@ pnpm dev
 todo-app/
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx          # Main todo component
-│   │   ├── layout.tsx         # Root layout
+│   │   ├── page.tsx           # Main todo page (protected)
+│   │   ├── login/
+│   │   │   └── page.tsx       # Login page
+│   │   ├── signup/
+│   │   │   └── page.tsx       # Signup page
+│   │   ├── layout.tsx         # Root layout with providers
 │   │   └── globals.css        # Global styles
+│   ├── components/
+│   │   └── ThemeToggle.tsx    # Animated theme toggle button
+│   ├── context/
+│   │   ├── AuthContext.tsx    # Authentication state management
+│   │   └── ThemeContext.tsx   # Theme state management
 │   └── lib/
 │       └── supabase.ts        # Supabase client configuration
-├── public/                    # Static assets
-├── .env.local                 # Environment variables (not in repo)
+├── public/                     # Static assets
+├── .env.local                  # Environment variables (not in repo)
+├── tailwind.config.ts          # Tailwind configuration
 ├── package.json
 └── README.md
 ```
@@ -119,57 +176,93 @@ todo-app/
 The application uses a PostgreSQL database (via Supabase) with the following structure:
 
 **tasks table:**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key, auto-generated |
-| created_at | timestamptz | Auto-generated timestamp |
-| title | text | Task description |
-| status | text | 'pending', 'in-progress', or 'completed' |
-| date_created | timestamptz | When task was created |
-| date_started | timestamptz | When task was started (nullable) |
-| date_finished | timestamptz | When task was completed (nullable) |
-| order | bigint | For drag-drop ordering |
+| Column        | Type        | Description                                      |
+|---------------|-------------|--------------------------------------------------|
+| id            | uuid        | Primary key, auto-generated                      |
+| created_at    | timestamptz | Auto-generated timestamp                         |
+| title         | text        | Task description                                 |
+| status        | text        | 'pending', 'in-progress', or 'completed'         |
+| date_created  | timestamptz | When task was created                            |
+| date_started  | timestamptz | When task was started (nullable)                 |
+| date_finished | timestamptz | When task was completed (nullable)               |
+| order         | bigint      | For drag-drop ordering                           |
+| user_id       | uuid        | Foreign key to auth.users, identifies task owner |
+
+## 🔐 Authentication & Security
+
+### Features
+- Email/password authentication via Supabase Auth
+- Secure session management
+- Protected routes (automatic redirect to login)
+- Password validation (minimum 6 characters)
+
+### Security Measures
+- Row Level Security (RLS) enabled on all tables
+- Users can only access their own data
+- API keys secured via environment variables
+- SQL injection prevention through Supabase client
+- XSS protection via React's built-in escaping
+
+### Best Practices Implemented
+- Never commit `.env.local` to version control
+- Use environment variables for all sensitive data
+- Implement proper authentication checks on protected routes
+- Database policies enforce user isolation at the database level
 
 ## 🎓 Learning Outcomes
 
 Through building this project, I learned:
-- React Hooks (useState, useEffect)
+- React Hooks (useState, useEffect, useContext)
 - TypeScript interfaces and type safety
-- State management and immutability
-- **Supabase integration and CRUD operations**
-- **PostgreSQL database design**
-- **Environment variables and API security**
+- State management with Context API
+- **User authentication and authorization**
+- **Row Level Security in PostgreSQL**
+- **Protected routes in Next.js**
+- Supabase integration and CRUD operations
+- PostgreSQL database design and foreign keys
+- Environment variables and API security
 - Framer Motion for animations
-- Tailwind CSS for styling
-- Next.js project structure and conventions
+- Tailwind CSS for styling and dark mode
+- Next.js 14+ App Router
 - Git version control and GitHub workflow
-- Icon implementation with React Feather
 
-## 🔒 Security Notes
+## 🚧 Current Phase: Phase 2 Complete! ✅
 
-- Row Level Security (RLS) is currently disabled for development
-- In production, implement proper authentication and RLS policies
-- Never commit `.env.local` to version control
-- Use environment variables for all sensitive data
+### ✅ Completed Features:
+- [x] Core todo functionality (CRUD)
+- [x] Task status management
+- [x] Filters and date tracking
+- [x] Supabase database integration
+- [x] User authentication (signup/login/logout)
+- [x] Row Level Security
+- [x] Multi-user support
+- [x] Dark/Light mode with animated toggle
+- [x] Icon-based UI
+- [x] Delete confirmation dialog
 
-## 🚧 Future Enhancements
+### 🚧 Next Phase: Phase 3
+- [ ] User profile page
+- [ ] Display user statistics (total tasks, completed, etc.)
+- [ ] Edit profile information
+- [ ] Password change functionality
+- [ ] Account settings
 
-- [ ] User authentication (Supabase Auth)
-- [ ] Row Level Security policies
-- [ ] Real-time sync across devices (requires Supabase Pro)
+### 🎯 Future Enhancements (Phase 4+)
+- [ ] Password reset via email
 - [ ] Task categories/tags
 - [ ] Priority levels
 - [ ] Due dates and reminders
-- [ ] Dark mode toggle
-- [ ] Export tasks to CSV/PDF
 - [ ] Task search functionality
-- [ ] Recurring tasks
+- [ ] Export tasks (CSV/PDF)
+- [ ] Collaborative tasks (share with other users)
+- [ ] Email notifications
+- [ ] Mobile app (React Native)
+- [ ] Deploy to Vercel
 
 ## 🐛 Known Issues
 
 - Drag-and-drop may not work smoothly when filters are active
-- Manual page refresh required to see changes made from other devices/tabs
-- Consider implementing optimistic updates for better UX
+- Manual page refresh required to see changes made from other devices/tabs (real-time sync requires Supabase Pro)
 
 ## 📝 License
 
@@ -186,10 +279,12 @@ This is a personal learning project, but suggestions and feedback are welcome! F
 
 ## 🙏 Acknowledgments
 
-- Built while learning Next.js, React, and Supabase
-- Inspired by modern todo applications
+- Built while learning Next.js, React, Supabase, and authentication patterns
+- Inspired by modern todo applications and task management tools
 - Special thanks to the Next.js, React, and Supabase communities
 
 ---
 
 **Happy Task Managing! 📝✨**
+
+*Last Updated: December 2024 - Phase 2 Complete*
