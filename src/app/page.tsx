@@ -13,7 +13,7 @@ interface Task {
 
 import { motion, Reorder } from "framer-motion";
 import { useState, useEffect } from "react";
-import { PlusSquare, Trash, Check, Edit, X, Play} from "react-feather";
+import { PlusSquare, Trash, Check, Edit, X, Play, User, LogOut } from "react-feather";
 import { createClient } from "@supabase/supabase-js";
 import { useAuth } from "./context/AuthContext";
 import { useTheme } from "./context/ThemeContext";
@@ -38,10 +38,10 @@ export default function Home() {
 
   // Load tasks from Supabase on component mount
   useEffect(() => {
-    if (!user && !authLoading) {
+    if (!authLoading && !user) {
       router.push('/login');
     }
-  }, [user, authLoading, router]);
+  }, [authLoading, user, router]);
 
   useEffect(() => {
     if (user) {
@@ -241,12 +241,18 @@ export default function Home() {
     return true;
   });
 
-  if (authLoading || !user) {
+  // Show loading state while checking authentication
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-gray-500">Loading...</p>
       </div>
     );
+  }
+
+  //If no user after loading, redirect will happen via useEffect
+  if (!user) {
+    return null;
   }
 
   return (
@@ -261,11 +267,19 @@ export default function Home() {
         <h1 className={`text-4xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>📝 My Todo App</h1>
         <div className="flex items-center gap-4">
           <span className={theme === 'dark' ? 'text-white' : 'text-black'}>Welcome, {user.email}</span>
+          <span className={theme === 'dark' ? 'text-white' : 'text-black'}>User Profile</span>
+            <button
+              onClick={() => router.push('/profile')}
+              className={`p-2 rounded-full 
+              ${theme === 'dark'
+                  ? 'bg-gray-400 hover:bg-gray-500'
+                  : 'bg-gray-400 hover:bg-gray-700'} `}><User size={25} />
+            </button>
           <button
             onClick={signOut}
             className="bg-red-500 hover:bg-red-700 text-white p-2 rounded"
           >
-            Sign Out
+            <LogOut size={25} />
           </button>
         </div>
       </div>

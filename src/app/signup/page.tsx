@@ -8,6 +8,7 @@ import ThemeToggle from '../context/ThemeToggle';
 
 export default function SignupPage() {
     const [email, setEmail] = useState('');
+    const [name, setName] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState("");
@@ -16,7 +17,7 @@ export default function SignupPage() {
     const { signUp } = useAuth();
     const router = useRouter();
 
-    const handlSignup = async (e: React.FormEvent) => {
+    const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
@@ -60,7 +61,7 @@ export default function SignupPage() {
                         Create a New Account
                     </h2>
                 </div>
-                <form className="mt-8 space-y-4" onSubmit={handlSignup}>
+                <form className="mt-8 space-y-4" onSubmit={handleSignup}>
                     {error && (
                         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                             {error}
@@ -85,6 +86,23 @@ export default function SignupPage() {
                             />
                         </div>
                     </div>
+                    {/* <div>
+                        <label htmlFor="name" className={`block text-sm font-medium 
+                                ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                            Name:
+                        </label>
+                        <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            value={name}
+                            required
+                            onChange={(e) => setName(e.target.value)}
+                            className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500
+                                    ${theme === 'dark' ? 'bg-gray-700 text-white placeholder-gray-400' : 'bg-white text-black placeholder-gray-500'}`}
+                            placeholder="Name"
+                        />
+                    </div> */}
                     <div>
                         <label htmlFor="password" className={`block text-sm font-medium 
                             ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
