@@ -13,10 +13,12 @@ interface Task {
 
 import { motion, Reorder } from "framer-motion";
 import { useState, useEffect } from "react";
-import { PlusSquare, Trash, Check, Edit, X, Play } from "react-feather";
+import { PlusSquare, Trash, Check, Edit, X, Play, Sun, Moon } from "react-feather";
 import { createClient } from "@supabase/supabase-js";
 import { useAuth } from "./context/AuthContext";
+import { useTheme } from "./context/ThemeContext";
 import { useRouter } from "next/navigation";
+import ThemeToggle from "./context/ThemeToggle";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -24,6 +26,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const [task, setTask] = useState("");
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -247,12 +250,17 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      {/* Header with User Info and Log Out */}
+    <main className={`flex min-h-screen flex-col items-center justify-between p-24 
+    ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}>
+      {/* Theme Toggle Button */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      {/* Header with User Info and Controls*/}
       <div className="flex w-full max-w-5xl items-center justify-between mb-12">
-        <h1 className="text-4xl font-bold mb-4">📝 My Todo App</h1>
+        <h1 className={`text-4xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>📝 My Todo App</h1>
         <div className="flex items-center gap-4">
-          <span className="text-white">Welcome, {user.email}</span>
+          <span className={theme === 'dark' ? 'text-white' : 'text-black'}>Welcome, {user.email}</span>
           <button
             onClick={signOut}
             className="bg-red-500 hover:bg-red-700 text-white p-2 rounded"
@@ -273,7 +281,8 @@ export default function Home() {
             }
           }}
           placeholder="Enter a new task"
-          className="border p-2 mb-4 w-1/2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className={`border p-2 mb-4 w-1/2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 
+            ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-white text-black'}`}
         />
         <motion.button
           onClick={() => {
@@ -292,7 +301,9 @@ export default function Home() {
           onClick={() => setFilter("All Tasks")}
           className={`px-4 py-2 rounded transition-colors ${filter === "All Tasks"
             ? "bg-blue-600 text-white"
-            : "bg-blue-300 text-gray-700 hover:bg-gray-300"
+            : theme === 'dark'
+              ? "bg-blue-900 text-blue-200 hover:bg-blue-400"
+              : "bg-blue-300 text-gray-700 hover:bg-blue-800"
             }`}
         >
           All Tasks ({tasks.length})
@@ -301,7 +312,9 @@ export default function Home() {
           onClick={() => setFilter("Pending")}
           className={`px-4 py-2 rounded transition-colors ${filter === "Pending"
             ? "bg-gray-500 text-white"
-            : "bg-white text-gray-700 hover:bg-gray-300"
+            : theme === 'dark'
+              ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
+              : "bg-gray-300 text-gray-700 hover:bg-gray-400"
             }`}
         >
           Pending ({tasks.filter((pending) => pending.status === "pending").length})
@@ -310,7 +323,9 @@ export default function Home() {
           onClick={() => setFilter("Active")}
           className={`px-4 py-2 rounded transition-colors ${filter === "Active"
             ? "bg-orange-400 text-white"
-            : "bg-orange-300 text-gray-700 hover:bg-gray-300"
+            : theme === 'dark'
+              ? "bg-orange-900 text-orange-200 hover:bg-orange-800"
+              : "bg-orange-300 text-gray-700 hover:bg-gray-400"
             }`}
         >
           Active ({tasks.filter((active) => active.status === "in-progress").length})
@@ -319,7 +334,9 @@ export default function Home() {
           onClick={() => setFilter("Completed")}
           className={`px-4 py-2 rounded transition-colors ${filter === "Completed"
             ? "bg-green-600 text-white"
-            : "bg-green-300 text-gray-700 hover:bg-gray-300"
+            : theme === 'dark'
+              ? "bg-green-900 text-green-200 hover:bg-green-800"
+              : "bg-green-300 text-gray-700 hover:bg-gray-400"
             }`}
         >
           Completed ({tasks.filter((completed) => completed.status === "completed").length})
@@ -328,11 +345,17 @@ export default function Home() {
       {/* Task List with Drag-and-Drop Reordering */}
       <div className="space-y-4 p-2 w-full max-w-2xl">
         {loading ? (
-          <div className="p-6 bg-gray-50 border rounded-lg text-gray-700">
+          <div className={`p-6 bg-gray-50 border rounded-lg 
+            ${theme === 'dark'
+              ? 'bg-gray-800 border-gray-700 text-gray-200'
+              : 'bg-gray-50 border-gray-200 text-gray-700'}`}>
             Loading tasks...
           </div>
         ) : filteredTasks.length === 0 ? (
-          <div className="p-6 bg-gray-50 border rounded-lg text-gray-700">
+          <div className={`p-6 bg-gray-50 border rounded-lg 
+            ${theme === 'dark'
+              ? 'bg-gray-800 border-gray-700 text-gray-200'
+              : 'bg-gray-50 border-gray-200 text-gray-700'}`}>
             {filter === "All Tasks" ? "No tasks available. Please add a task." : `No ${filter.toLowerCase()} tasks available. Please add a task.`}
           </div>
         ) : (
@@ -351,12 +374,20 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="p-3 bg-blue-700 border rounded-lg flex justify-between items-center cursor-grab active:cursor-grabbing"
+                className={`p-3 bg-blue-700 border rounded-lg flex justify-between items-center cursor-grab active:cursor-grabbing 
+                    ${theme === 'dark'
+                    ? 'bg-blue-800 border-blue-700 text-gray-200'
+                    : 'bg-blue-200 border-blue-200 text-gray-700'
+                  }`}
                 style={{ touchAction: "none" }}
               >
 
                 {/* Drag handle indicator */}
-                <div className="mr-3 text-white text-xl select-none">⋮⋮</div>
+                <div className={`mr-3 text-xl select-none 
+                    ${theme === 'dark'
+                    ? 'text-gray-200'
+                    : 'text-gray-700'
+                  }`}>⋮⋮</div>
 
                 {/* Conditional rendering: edit mode and view mode */}
                 {editingId === item.id ? (
@@ -369,7 +400,10 @@ export default function Home() {
                       if (e.key === "Enter") saveEditedTask(item.id);
                       if (e.key === "Escape") cancelEditing();
                     }}
-                    className="border p-1 rounded w-2/3"
+                    className={`border p-1 rounded w-2/3 ${theme === 'dark'
+                      ? 'bg-gray-700 text-gray-200 border-gray-600'
+                      : 'bg-white text-gray-700 border-gray-300'
+                      }`}
                     autoFocus
                   />
                 ) : (
@@ -381,14 +415,16 @@ export default function Home() {
                       whileTap={{ scale: 0.95 }}
                       className="cursor-pointer"
                     >
-                      <span className={`block ${item.status === "completed" ? "line-through text-gray-300" : "text-white"
+                      <span className={`block ${item.status === "completed"
+                        ? theme === 'dark' ? "line-through text-gray-300" : "line-through text-gray-200"
+                        : theme === 'dark' ? "text-gray-200" : "text-gray-200"
                         }`}>
                         {item.title}
                       </span>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-0.5 rounded ${item.status === "pending" ? "bg-gray-500" :
+                        <span className={`text-xs px-2 py-0.5 rounded ${item.status === "pending" ? "bg-gray-500 text-gray-100" :
                           item.status === "in-progress" ? "bg-orange-400 text-gray-100" :
-                            "bg-green-500"
+                            "bg-green-500 text-gray-100"
                           }`}>
                           {item.status === "pending" ? "Pending" :
                             item.status === "in-progress" ? "In Progress" :
@@ -396,7 +432,8 @@ export default function Home() {
                         </span>
                       </div>
                     </motion.div>
-                    <div className="text-sm text-gray-300 mt-1 space-y-0.5">
+                    <div className={`text-sm mt-1 space-y-0.5 
+                        ${theme === 'dark' ? "text-gray-300" : "text-gray-200"}`}>
                       📅 Created: {formatDate(item.date_created)}
                       {item.date_started && <div>🚀 Started: {formatDate(item.date_started)}</div>}
                       {item.date_completed && <div>✅ Finished: {formatDate(item.date_completed)}</div>}

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
+import { useTheme } from '../context/ThemeContext';
+import ThemeToggle from '../context/ThemeToggle';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -11,6 +13,7 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const { signIn } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const router = useRouter();
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -28,10 +31,22 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
-            <div className="max-w-md w-full bg-white p-8 rounded shadow">
+        <div className={`min-h-screen flex items-center justify-center 
+            ${theme === 'dark'
+                ? 'bg-gray-900'
+                : 'bg-gray-100'
+            }`}>
+            {/* Theme Toggle Button */}
+            <div className="absolute top-4 right-4">
+                <ThemeToggle />
+            </div>
+            <div className={`max-w-md w-full p-8 rounded shadow-lg ${theme === 'dark'
+                ? 'bg-gray-800 text-white'
+                : 'bg-white text-black'} `}>
                 <div>
-                    <h2 className="text-2xl font-bold mb-6 text-center text-black">Login to Your Account</h2>
+                    <h2 className={`text-2xl font-bold mb-6 text-center ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+                        Login to Your Account
+                    </h2>
                 </div>
                 <form className="mt-8 space-y-4" onSubmit={handleLogin}>
                     {error && (
@@ -41,7 +56,8 @@ export default function LoginPage() {
                     )}
                     <div className="space-y-4">
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="email" className={`block text-sm font-medium 
+                                ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                                 Email Address:
                             </label>
                             <input
@@ -51,13 +67,15 @@ export default function LoginPage() {
                                 value={email}
                                 required
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 
+                                    ${theme === 'dark' ? 'bg-gray-700 text-white placeholder-gray-400' : 'bg-white text-black placeholder-gray-500'}`}
                                 placeholder="you@example.com"
                             />
                         </div>
                     </div>
                     <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="password" className={`block text-sm font-medium 
+                            ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                             Password
                         </label>
                         <input
@@ -67,7 +85,8 @@ export default function LoginPage() {
                             value={password}
                             required
                             onChange={(e) => setPassword(e.target.value)}
-                            className="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500
+                                ${theme === 'dark' ? 'bg-gray-700 text-white placeholder-gray-400' : 'bg-white text-black placeholder-gray-500'}`}
                             placeholder="**********"
                         />
                     </div>
@@ -80,7 +99,8 @@ export default function LoginPage() {
                             {loading ? 'Logging in...' : 'Login'}
                         </button>
                     </div>
-                    <p className="mt-4 text-center text-sm text-gray-600">
+                    <p className={`mt-4 text-center text-sm 
+                        ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                         Don't have an account?{' '}
                         <Link href="/signup" className="text-blue-600 hover:text-blue-500">
                             Sign Up
