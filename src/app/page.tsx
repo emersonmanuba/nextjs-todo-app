@@ -18,7 +18,9 @@ import { createClient } from "@supabase/supabase-js";
 import { useAuth } from "./context/AuthContext";
 import { useTheme } from "./context/ThemeContext";
 import { useRouter } from "next/navigation";
+import { fetchUserProfile, getUserInitials, UserProfile } from './lib/profileService';
 import ThemeToggle from "./context/ThemeToggle";
+import { toastSuccess, toastError, toastMessages } from './lib/toast';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -31,6 +33,7 @@ export default function Home() {
   const [task, setTask] = useState("");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [editText, setEditText] = useState("");
   const [filter, setFilter] = useState<"All Tasks" | "Pending" | "Active" | "Completed">("All Tasks");
   const [loading, setLoading] = useState(true);
@@ -43,17 +46,28 @@ export default function Home() {
     }
   }, [authLoading, user, router]);
 
+
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (user) {
+        const profile = await fetchUserProfile(user.id);
+        setProfile(profile);
+      }
+    };
+
+    loadUserProfile();
+  }, [user]);
+
   useEffect(() => {
     if (user) {
+
       fetchTasks();
     }
   }, [user]);
 
-
   // Function to fetch all tasks from Supabase
   const fetchTasks = async () => {
     if (!user) return;
-
     setLoading(true);
     const { data, error } = await supabase
       .from('tasks')
@@ -88,10 +102,11 @@ export default function Home() {
         .single();
 
       if (error) {
-        console.error("Error fetching tasks:", error);
+        toastError("Error fetching tasks");
       } else {
         setTasks([...tasks, data]);
         setTask("");
+        toastSuccess(toastMessages.taskCreated)
       }
     }
   };
@@ -112,6 +127,7 @@ export default function Home() {
       console.error("Error updating task:", error);
     } else {
       setTasks(tasks.map(task => task.id === id ? data : task));
+      toastSuccess(toastMessages.taskStarted);
     }
   };
 
@@ -132,6 +148,7 @@ export default function Home() {
       console.error("Error updating task:", error);
     } else {
       setTasks(tasks.map(task => task.id === id ? data : task));
+      toastSuccess(toastMessages.taskCompleted);
     }
   };
 
@@ -173,6 +190,7 @@ export default function Home() {
       console.error("Error removing task:", error);
     } else {
       setTasks(tasks.filter(remove => remove.id !== id));
+      toastSuccess(toastMessages.taskDeleted);
     }
   }
 
@@ -196,6 +214,7 @@ export default function Home() {
         console.error("Error saving edited task:", error);
       } else {
         setTasks(tasks.map(task => task.id === id ? data : task));
+        toastSuccess(toastMessages.taskUpdated);
       }
     }
     setEditText("");
@@ -255,6 +274,11 @@ export default function Home() {
     return null;
   }
 
+  // if (!profile) {
+  //   return <div>Loading...</div>;
+  //   console.log(profile);
+  // }
+
   return (
     <main className={`flex min-h-screen flex-col items-center justify-between p-24 
     ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}>
@@ -266,15 +290,15 @@ export default function Home() {
       <div className="flex w-full max-w-5xl items-center justify-between mb-12">
         <h1 className={`text-4xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>📝 My Todo App</h1>
         <div className="flex items-center gap-4">
-          <span className={theme === 'dark' ? 'text-white' : 'text-black'}>Welcome, {user.email}</span>
+          <span className={theme === 'dark' ? 'text-white' : 'text-black'}>Welcome, {profile?.fullname}</span>
           <span className={theme === 'dark' ? 'text-white' : 'text-black'}>User Profile</span>
-            <button
-              onClick={() => router.push('/profile')}
-              className={`p-2 rounded-full 
+          <button
+            onClick={() => router.push('/profile')}
+            className={`p-2 rounded-full 
               ${theme === 'dark'
-                  ? 'bg-gray-400 hover:bg-gray-500'
-                  : 'bg-gray-400 hover:bg-gray-700'} `}><User size={25} />
-            </button>
+                ? 'bg-gray-400 hover:bg-gray-500'
+                : 'bg-gray-400 hover:bg-gray-700'} `}><User size={25} />
+          </button>
           <button
             onClick={signOut}
             className="bg-red-500 hover:bg-red-700 text-white p-2 rounded"

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
 import { useTheme } from '../context/ThemeContext';
 import ThemeToggle from '../context/ThemeToggle';
+import { toastSuccess, toastError, toastMessages } from '../lib/toast';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -23,9 +24,10 @@ export default function LoginPage() {
 
         const { error } = await signIn(email, password);
         if (error) {
-            setError(error);
+            toastError(error);
             setLoading(false);
         } else {
+            toastSuccess(toastMessages.loginSuccess);
             router.push('/');
         }
     };
