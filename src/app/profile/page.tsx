@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 import { useTheme } from '../context/ThemeContext';
 import ThemeToggle from '../context/ThemeToggle';
 import { fetchUserProfile, updateUserProfile, UserProfile, getUserInitials, createUserProfile } from '../lib/profileService';
-import { toastError, toastSuccess } from '../lib/toast';
+import { toastError, toastMessages, toastSuccess } from '../lib/toast';
 
 export default function ProfilePage() {
     const { user, loading: authLoading, signOut } = useAuth();
@@ -48,12 +48,12 @@ export default function ProfilePage() {
             // Fetch profile data
             let profileData = await fetchUserProfile(user.id);
 
-            if (!profileData) {
-                const createProfile = await createUserProfile(user.id, user.email || '', '');
-                if (createProfile) {
-                    profileData = await fetchUserProfile(user.id);
-                }
-            }
+            // if (!profileData) {
+            //     const createProfile = await createUserProfile(user.id, user.email || '', '');
+            //     if (createProfile) {
+            //         profileData = await fetchUserProfile(user.id);
+            //     }
+            // }
 
             if (profileData) {
                 setProfile(profileData);
@@ -140,26 +140,31 @@ export default function ProfilePage() {
         // Step 1: Validations
         if (!currentPassword || !newPassword || !confirmNewPassword) {
             setPasswordError('All fields are required');
+            toastError(toastMessages.passwordRequired);
             return;
         }
 
         if (newPassword.length < 6) {
             setPasswordError('New password must be at least 6 characters');
+            toastError(toastMessages.passwordTooShort);
             return;
         }
 
         if (newPassword !== confirmNewPassword) {
-            setPasswordError('New passwords do not match');
+            setPasswordError('New password do not match');
+            toastError(toastMessages.passwordMismatch);
             return;
         }
 
         if (currentPassword === newPassword) {
             setPasswordError('New password must be different from current password');
+            toastError(toastMessages.passwordSameAsOld);
             return;
         }
 
         if (!user?.email) {
             setPasswordError('User email is not available');
+            
             return;
         }
 

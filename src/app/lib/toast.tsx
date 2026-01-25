@@ -42,4 +42,5 @@ export const toastMessages = {
     passwordTooShort: "Password must be at least 6 characters",
     passwordMismatch: "Passwords do not match",
     passwordSameAsOld: "New password must be different",
+    passwordRequired: "All fields are required",
 };
