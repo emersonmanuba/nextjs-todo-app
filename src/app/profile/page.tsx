@@ -6,7 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../context/ThemeContext';
 import ThemeToggle from '../context/ThemeToggle';
-import { fetchUserProfile, updateUserProfile, UserProfile, getUserInitials } from '../lib/profileService';
+import { fetchUserProfile, updateUserProfile, UserProfile, getUserInitials, createUserProfile } from '../lib/profileService';
+import { toastError, toastSuccess } from '../lib/toast';
 
 export default function ProfilePage() {
     const { user, loading: authLoading, signOut } = useAuth();
@@ -16,6 +17,14 @@ export default function ProfilePage() {
     const [isEditProfile, setIsEditProfile] = useState(false);
     const [editedName, setEditedName] = useState('');
     const { theme, toggleTheme } = useTheme();
+
+    // Password change states
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+
     const router = useRouter();
     const [stats, setStats] = useState({
         totalTasks: 0,
@@ -30,16 +39,21 @@ export default function ProfilePage() {
         }
     }, [authLoading, user, router]);
 
-
-
     useEffect(() => {
-        const loadProfile = async () => {
+        const loadProfileAndStats = async () => {
 
             if (!user) return;
             setLoading(true);
 
-            // Fetch profile
-            const profileData = await fetchUserProfile(user.id);
+            // Fetch profile data
+            let profileData = await fetchUserProfile(user.id);
+
+            if (!profileData) {
+                const createProfile = await createUserProfile(user.id, user.email || '', '');
+                if (createProfile) {
+                    profileData = await fetchUserProfile(user.id);
+                }
+            }
 
             if (profileData) {
                 setProfile(profileData);
@@ -67,7 +81,7 @@ export default function ProfilePage() {
                 setLoading(false);
             }
         };
-        loadProfile();
+        loadProfileAndStats();
     }, [user]);
 
     const handleEdit = () => {
@@ -83,7 +97,7 @@ export default function ProfilePage() {
 
     // Handle save
     const handleSave = async () => {
-        if (!user || !profile) 
+        if (!user || !profile)
             return; // Guard clause
 
         const success = await updateUserProfile(user.id, {
@@ -94,7 +108,7 @@ export default function ProfilePage() {
             // Safe to update because we checked profile exists
             setIsEditProfile(false);
             setProfile({ ...profile, fullname: editedName });
-        } 
+        }
     };
 
     const formatDate = (dateString: string) => {
@@ -107,7 +121,6 @@ export default function ProfilePage() {
         });
     };
 
-
     if (authLoading || loading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
@@ -119,6 +132,73 @@ export default function ProfilePage() {
     if (!user || !profile) {
         redirect('/login');
     }
+
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setPasswordError('');
+
+        // Step 1: Validations
+        if (!currentPassword || !newPassword || !confirmNewPassword) {
+            setPasswordError('All fields are required');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            setPasswordError('New password must be at least 6 characters');
+            return;
+        }
+
+        if (newPassword !== confirmNewPassword) {
+            setPasswordError('New passwords do not match');
+            return;
+        }
+
+        if (currentPassword === newPassword) {
+            setPasswordError('New password must be different from current password');
+            return;
+        }
+
+        if (!user?.email) {
+            setPasswordError('User email is not available');
+            return;
+        }
+
+        // Step 2: Verify current password by trying to sign in
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: user.email,
+            password: currentPassword
+        });
+
+        if (signInError) {
+            setPasswordError('Current password is incorrect');
+            return;
+        }
+
+
+        // Step 3: Update to new password
+        const { error: updateError } = await supabase.auth.updateUser({
+            password: newPassword
+        });
+
+        if (updateError) {
+            toastError(updateError.message);
+            return;
+        }
+
+        // Step 4: Success - clear form and close
+        // Reset all password fields
+        // setIsChangingPassword(false)
+        // Show success toast
+
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+        setIsChangingPassword(false);
+        toastSuccess('Password changed successfully! Please log in again.');
+        // Sign out the user to force re-login
+        await signOut();
+    };
+
 
     // if (!profile) {
     //     return <div>Loading...</div>;
@@ -158,7 +238,7 @@ export default function ProfilePage() {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={handleSave}
-                                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+                                        className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
                                     >
                                         Save
                                     </button>
@@ -166,7 +246,7 @@ export default function ProfilePage() {
                                         onClick={() => {
                                             handleCancel();
                                         }}
-                                        className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+                                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
                                     >
                                         Cancel
                                     </button>
@@ -183,6 +263,92 @@ export default function ProfilePage() {
                                     Edit
                                 </button>
                             </div>
+                        )}
+                    </div>
+                    {/* Password Change Card */}
+                    <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg p-2 shadow-md}`}>
+                        {!isChangingPassword ? (
+                            // Show "Change Password" button
+                            <button
+                                onClick={() => setIsChangingPassword(true)}
+                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            >
+                                Change Password
+                            </button>
+                        ) : (
+                            // Show password change form
+                            <form onSubmit={handlePasswordChange} className="space-y-4">
+                                {passwordError && (
+                                    <div className={`${theme === 'dark' ? 'bg-red-900 border-red-400 text-red-200' : 'bg-red-100 border-red-400 text-red-700'} px-4 py-3 rounded`}>
+                                        {passwordError}
+                                    </div>
+                                )}
+
+                                {/* Current Password Input */}
+                                <div>
+                                    <label className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} block text-sm font-medium`}>
+                                        Current Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                        placeholder="Enter current password"
+                                        className={`${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'} mt-1 block w-full px-3 py-2 border rounded-md`}
+                                    />
+                                </div>
+
+                                {/* New Password Input */}
+                                <div>
+                                    <label className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} block text-sm font-medium`}>
+                                        New Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        placeholder="Enter new password (min 6 characters)"
+                                        className={`${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'} mt-1 block w-full px-3 py-2 border rounded-md`}
+                                    />
+                                </div>
+
+                                {/* Confirm New Password Input */}
+                                <div>
+                                    <label className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} block text-sm font-medium`}>
+                                        Confirm New Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={confirmNewPassword}
+                                        onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                        placeholder="Re-enter new password"
+                                        className={`${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-white text-gray-900'} mt-1 block w-full px-3 py-2 border rounded-md`}
+                                    />
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                    >
+                                        Update Password
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsChangingPassword(false);
+                                            setCurrentPassword('');
+                                            setNewPassword('');
+                                            setConfirmNewPassword('');
+                                            setPasswordError('');
+                                        }}
+                                        className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
                         )}
                     </div>
                     <p className="mb-4"><strong>Email Address:</strong> {user.email}</p>

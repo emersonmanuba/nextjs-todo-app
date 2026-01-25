@@ -86,10 +86,10 @@ export default function LoginPage() {
                             name="password"
                             value={password}
                             required
+                            placeholder="**********"
                             onChange={(e) => setPassword(e.target.value)}
                             className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500
                                 ${theme === 'dark' ? 'bg-gray-700 text-white placeholder-gray-400' : 'bg-white text-black placeholder-gray-500'}`}
-                            placeholder="**********"
                         />
                     </div>
                     <div>
