@@ -42,7 +42,6 @@ export default function SignupPage() {
 
             if (error) {
                 toastError(error.message);
-                console.log(error);
                 setLoading(false);
                 return;
             }
