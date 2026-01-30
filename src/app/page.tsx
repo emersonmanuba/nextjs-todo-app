@@ -287,11 +287,16 @@ export default function Home() {
         <ThemeToggle />
       </div>
       {/* Header with User Info and Controls*/}
-      <div className="flex w-full max-w-5xl items-center justify-between mb-12">
-        <h1 className={`text-4xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>📝 My Todo App</h1>
+      <h1 className={`flex items-center gap-2 text-4xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+        📝
+        <span className="whitespace-nowrap">My Todo <span className="hidden sm:inline">App</span>
+        </span>
+      </h1>
+      <div className="flex items-center justify-between mb-12">
+        <br></br>
         <div className="flex items-center gap-4">
           <span className={theme === 'dark' ? 'text-white' : 'text-black'}>Welcome, {profile?.fullname}</span>
-          <span className={theme === 'dark' ? 'text-white' : 'text-black'}>User Profile</span>
+          <span className={`hidden sm:inline ${theme === 'dark' ? 'text-white' : 'text-black'}`}>User Profile</span>
           <button
             onClick={() => router.push('/profile')}
             className={`p-2 rounded-full 
@@ -307,7 +312,7 @@ export default function Home() {
           </button>
         </div>
       </div>
-      <div className="flex items-center justify-between w-2xl max-w-5xl mb-12 mt-12">
+      <div className="flex items-center justify-between max-w-5xl mb-12 mt-8">
         {/* This is a simple to-do app built with React and Tailwind CSS. */}
         <input
           type="text"
@@ -505,13 +510,13 @@ export default function Home() {
                     </>
                   ) : (
                     // Status and action buttons in view mode
-                    <>
+                    <div className="flex gap-2">
                       {item.status === "pending" && (
                         <motion.button
                           onClick={() => markedStarted(item.id)}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="bg-blue-500 text-white px-2 py-1.5 rounded"
+                          className="bg-blue-500 text-white px-2 py-1.5 rounded hidden sm:inline-flex"
                         >
                           {/* Start Button */}
                           <Play size={20} />
@@ -522,7 +527,7 @@ export default function Home() {
                           onClick={() => markedCompleted(item.id)}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          className="bg-green-500 text-white px-2 py-1.5 rounded"
+                          className="bg-green-500 text-white px-2 py-1.5 rounded hidden sm:inline-flex"
                         >
                           <Check size={20} />
                         </motion.button>
@@ -544,7 +549,7 @@ export default function Home() {
                       >
                         <Trash size={20} />
                       </motion.button>
-                    </>
+                    </div>
                   )}
                 </div>
               </Reorder.Item>
