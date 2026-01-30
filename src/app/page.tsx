@@ -274,13 +274,8 @@ export default function Home() {
     return null;
   }
 
-  // if (!profile) {
-  //   return <div>Loading...</div>;
-  //   console.log(profile);
-  // }
-
   return (
-    <main className={`flex min-h-screen flex-col items-center justify-between p-24 
+    <main className={`flex min-h-screen flex-col items-center justify-between py-18
     ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}>
       {/* Theme Toggle Button */}
       <div className="absolute top-4 right-4">
@@ -312,7 +307,7 @@ export default function Home() {
           </button>
         </div>
       </div>
-      <div className="flex items-center justify-between max-w-5xl mb-12 mt-8">
+      <div className="flex w-full justify-between mb-12 mt-8 px-4 max-w-full lg:max-w-2xl">
         {/* This is a simple to-do app built with React and Tailwind CSS. */}
         <input
           type="text"
@@ -339,7 +334,7 @@ export default function Home() {
         </motion.button>
       </div>
       {/* Filter Buttons */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 p-4">
         <button
           onClick={() => setFilter("All Tasks")}
           className={`px-4 py-2 rounded transition-colors ${filter === "All Tasks"
