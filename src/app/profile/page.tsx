@@ -265,7 +265,7 @@ export default function ProfilePage() {
                                     onClick={() => handleEdit()}
                                     className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded"
                                 >
-                                    Edit
+                                    Edit Profile
                                 </button>
                             </div>
                         )}
