@@ -164,7 +164,7 @@ export default function ProfilePage() {
 
         if (!user?.email) {
             setPasswordError('User email is not available');
-            
+
             return;
         }
 
@@ -220,11 +220,13 @@ export default function ProfilePage() {
                 <div className={`max-w-4xl mx-auto space-y-6
                 ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-gray-200 text-black'} rounded shadow p-6`}>
                     <h1 className="text-4xl font-bold mb-6 text-center "> My Profile </h1>
-                    <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>
+                    <h2 className={`text-2xl font-bold text-center ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>
                         Account Information
                     </h2>
+                    <div className="flex justify-center">
                     <div className="w-20 h-20 rounded-full bg-blue-500 flex items-center justify-center text-white text-3xl font-bold">
                         {getUserInitials(profile)}
+                    </div>
                     </div>
                     <div className="my-4">
                         {isEditProfile ? (
@@ -233,6 +235,11 @@ export default function ProfilePage() {
                                 <input
                                     type="text"
                                     value={editedName}
+                                    onKeyDown={(event) => {
+                                        if (event.key === "Enter") {
+                                            handleSave();
+                                        }
+                                    }}
                                     onChange={(e) => setEditedName(e.target.value)}
                                     className={`w-full p-2 border 
                                         ${theme === 'dark'
@@ -271,7 +278,7 @@ export default function ProfilePage() {
                         )}
                     </div>
                     {/* Password Change Card */}
-                    <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg p-2 shadow-md}`}>
+                    <div className={`${theme === 'dark' ? 'bg-gray-500' : 'bg-white'} rounded-lg p-2 shadow-md}`}>
                         {!isChangingPassword ? (
                             // Show "Change Password" button
                             <button
@@ -337,7 +344,7 @@ export default function ProfilePage() {
                                         type="submit"
                                         className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
                                     >
-                                        Update Password
+                                        Update
                                     </button>
                                     <button
                                         type="button"
@@ -348,7 +355,7 @@ export default function ProfilePage() {
                                             setConfirmNewPassword('');
                                             setPasswordError('');
                                         }}
-                                        className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
                                     >
                                         Cancel
                                     </button>

@@ -37,6 +37,7 @@ export default function Home() {
   const [editText, setEditText] = useState("");
   const [filter, setFilter] = useState<"All Tasks" | "Pending" | "Active" | "Completed">("All Tasks");
   const [loading, setLoading] = useState(true);
+  const isDisabled = !task.trim();
 
 
   // Load tasks from Supabase on component mount
@@ -246,10 +247,19 @@ export default function Home() {
 
   // Function to format date strings
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Not Set";
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  if (!dateString) return "Not Set";
+
+  const date = new Date(dateString);
+
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  const yy = String(date.getUTCFullYear()).slice(-2);
+
+  const hh = String(date.getUTCHours()).padStart(2, "0");
+  const min = String(date.getUTCMinutes()).padStart(2, "0");
+
+  return `${mm}/${dd}/${yy} ${hh}:${min}`;
+};
 
   //Function to filter tasks
   const filteredTasks = tasks.filter(task => {
@@ -287,11 +297,9 @@ export default function Home() {
         <span className="whitespace-nowrap">My Todo <span className="hidden sm:inline">App</span>
         </span>
       </h1>
-      <div className="flex items-center justify-between mb-12">
-        <br></br>
+      <div className="flex items-center justify-between mb-10 w-full px-4 max-w-full md:max-w-2xl lg:max-w-2xl">
+        <span className={theme === 'dark' ? 'text-white' : 'text-black'}>Welcome, {profile?.fullname}</span>
         <div className="flex items-center gap-4">
-          <span className={theme === 'dark' ? 'text-white' : 'text-black'}>Welcome, {profile?.fullname}</span>
-          <span className={`hidden sm:inline ${theme === 'dark' ? 'text-white' : 'text-black'}`}>User Profile</span>
           <button
             onClick={() => router.push('/profile')}
             className={`p-2 rounded-full 
@@ -307,7 +315,7 @@ export default function Home() {
           </button>
         </div>
       </div>
-      <div className="flex w-full justify-between mb-12 mt-8 px-4 max-w-full lg:max-w-2xl">
+      <div className="flex w-full justify-between mb-12 mt-8 px-4 max-w-full md:max-w-2xl lg:max-w-2xl">
         {/* This is a simple to-do app built with React and Tailwind CSS. */}
         <input
           type="text"
@@ -323,32 +331,37 @@ export default function Home() {
             ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-white text-black'}`}
         />
         <motion.button
+          disabled={isDisabled}
           onClick={() => {
             addTask();
             setTask("");
           }}
           whileHover={{ scale: 1.05 }}
-          className="bg-blue-500 hover:bg-blue-700 text-white p-2 rounded mb-4 gap-2 flex items-center"
+          className={`
+            ${isDisabled 
+              ? 'opacity-50 cursor-not-allowed text-opacity-400 bg-gray-400' 
+              : 'bg-emerald-700 hover:bg-emerald-500'}
+              text-gray-200 p-2 rounded mb-4 gap-2 flex items-center justify-center`}
         >
-          <PlusSquare size={25} />Add
+          <PlusSquare size={25} />Task
         </motion.button>
       </div>
       {/* Filter Buttons */}
-      <div className="flex gap-2 mb-6 p-4">
+      <div className="flex gap-2 m-8 px-4">
         <button
           onClick={() => setFilter("All Tasks")}
-          className={`px-4 py-2 rounded transition-colors ${filter === "All Tasks"
+          className={`p-2 lg:px-4 lg:py-2 text-xs md:text-base rounded transition-colors ${filter === "All Tasks"
             ? "bg-blue-600 text-white"
             : theme === 'dark'
-              ? "bg-blue-900 text-blue-200 hover:bg-blue-400"
-              : "bg-blue-300 text-gray-700 hover:bg-blue-800"
+              ? "bg-blue-900 text-blue-200 hover:bg-blue-600"
+              : "bg-blue-300 text-blue-700 hover:bg-blue-400"
             }`}
         >
           All Tasks ({tasks.length})
         </button>
         <button
           onClick={() => setFilter("Pending")}
-          className={`px-4 py-2 rounded transition-colors ${filter === "Pending"
+          className={`p-2 lg:px-4 lg:py-2 text-xs md:text-base rounded transition-colors ${filter === "Pending"
             ? "bg-gray-500 text-white"
             : theme === 'dark'
               ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
@@ -359,29 +372,29 @@ export default function Home() {
         </button>
         <button
           onClick={() => setFilter("Active")}
-          className={`px-4 py-2 rounded transition-colors ${filter === "Active"
+          className={`px-4 py-2 text-xs md:text-base rounded transition-colors ${filter === "Active"
             ? "bg-orange-400 text-white"
             : theme === 'dark'
               ? "bg-orange-900 text-orange-200 hover:bg-orange-800"
-              : "bg-orange-300 text-gray-700 hover:bg-gray-400"
+              : "bg-orange-300 text-orange-700 hover:bg-orange-400"
             }`}
         >
           Active ({tasks.filter((active) => active.status === "in-progress").length})
         </button>
         <button
           onClick={() => setFilter("Completed")}
-          className={`px-4 py-2 rounded transition-colors ${filter === "Completed"
+          className={`p-2 lg:px-4 lg:py-2 text-xs md:text-base rounded transition-colors ${filter === "Completed"
             ? "bg-green-600 text-white"
             : theme === 'dark'
               ? "bg-green-900 text-green-200 hover:bg-green-800"
-              : "bg-green-300 text-gray-700 hover:bg-gray-400"
+              : "bg-green-300 text-green-700 hover:bg-green-400"
             }`}
         >
           Completed ({tasks.filter((completed) => completed.status === "completed").length})
         </button>
       </div>
       {/* Task List with Drag-and-Drop Reordering */}
-      <div className="space-y-4 p-2 w-full max-w-2xl">
+      <div className="space-y-4 py-4 pr-10 pl-4 w-full max-w-2xl">
         {loading ? (
           <div className={`p-6 bg-gray-50 border rounded-lg 
             ${theme === 'dark'
